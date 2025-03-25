@@ -220,7 +220,7 @@ class RouteThread(threading.Thread):
                     # 3. 截图并保存
                     screenshot_path = capture_window(self.hwnd, self.scal)
                     # 4. 定位 choose_route.png 在窗口中的位置
-                    self.choose_route_pos = locate_image_in_window(screenshot_path, choose_path, self.scal)
+                    self.choose_route_pos = locate_image_in_window(screenshot_path, "images/targets/choose_route.png", self.scal)
                     # 5. 触发单击操作
                     click_window(self.hwnd, self.choose_route_pos[0], self.choose_route_pos[1])
                     # 6. 触发线路选择方法
@@ -247,12 +247,13 @@ class RouteThread(threading.Thread):
                     # 8. 检查标题来判断是否换线成功
                     title = get_window_title(self.hwnd)
                     if str(self.route_number)+"线" in title:
-                        print("换线成功，退出循环")
+                        # print("换线成功，退出循环")
                         # 清除操作：删除 temp 目录下对应句柄的文件夹
-                        temp_dir = os.path.join(temp_path, str(self.hwnd))
+                        # temp_dir = os.path.join(temp_path, str(self.hwnd))
+                        temp_dir = "images/temp"
                         if os.path.exists(temp_dir):
                             shutil.rmtree(temp_dir)
-                            print(f"已删除目录: {temp_dir}")
+                            # print(f"已删除目录: {temp_dir}")
                         break
                 time.sleep(1)
             except Exception as e:
@@ -269,8 +270,5 @@ if __name__ == '__main__':
     # get_window_title(3476046)
     # send_key(3476046, VK_F7)
     time.sleep(2)
-    # capture_window(3476046, 2)
-    # locate_image_in_window(r"C:\Users\Hung\PycharmProjects\QQSG\tools\images\temp\3476046\3476046_20250323142552.png", r"C:\Users\Hung\PycharmProjects\QQSG\images\targets\choose_route.png", 2)
-    # click_window(3476046, 547, 401)
     send_key(3476046, VK_RETURN)
 
