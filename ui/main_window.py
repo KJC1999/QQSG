@@ -1,5 +1,5 @@
-from tools.public import *
 from tools.route_utils import *
+from tools.auto_clicker import *
 from tkinter import ttk, messagebox
 from tools.window_utils import *
 
@@ -35,6 +35,7 @@ class ToolApp:
         self.logo_labels = []  # 存储展示 Label
         self.start_buttons = []  # 存储开始按钮
         self.route_menu = []  # 存储下拉列表
+        self.clicker_position = None  # 存储点击坐标(x,y)
 
         # 初始化所有图标
         self.icons = load_icons("images/icons")
@@ -267,20 +268,97 @@ class ToolApp:
         label = ttk.Label(self.tab5, text="连点功能")
         label.pack(pady=20)
 
-        # 连点速度设置
-        self.speed_var = tk.IntVar()
-        speed_label = ttk.Label(self.tab5, text="连点速度（ms）")
-        speed_label.pack()
-        speed_entry = ttk.Entry(self.tab5, textvariable=self.speed_var)
-        speed_entry.pack(pady=10)
+        # 定位按钮
+        self.click_locate_button = tk.Button(
+            self.tab5,
+            image=self.icons["locate_icon"],
+            bd=0,  # 无边框
+            relief="flat",  # 扁平样式
+            cursor="hand2",  # 手型光标
+        )
+        self.click_locate_button.pack(pady=10)
 
-        # 启动按钮
-        start_button = ttk.Button(self.tab5, text="启动连点", command=self.start_click)
-        start_button.pack(pady=10)
+        # 绑定拖动事件
+        self.click_locate_button.bind("<ButtonPress-1>", self.on_click_drag_start)
+        self.click_locate_button.bind("<B1-Motion>", self.on_click_drag_motion)
+        self.click_locate_button.bind("<ButtonRelease-1>", self.on_click_drag_end)
 
-    def start_click(self):
-        speed = self.speed_var.get()
-        print(f"启动连点，速度：{speed}ms")
+        # 坐标显示
+        self.click_pos_label = ttk.Label(self.tab5, text="点击位置：未定位")
+        self.click_pos_label.pack()
+
+        # 启动/停止按钮
+        self.click_toggle_button = ttk.Button(
+            self.tab5,
+            text="启动连点",
+            command=self.clicker_start_stop
+        )
+        self.click_toggle_button.pack(pady=10)
+
+    def on_click_drag_start(self, event):
+        """开始拖动定位按钮"""
+        self.drag_data = {
+            "x": event.x,
+            "y": event.y,
+            "widget": event.widget
+        }
+
+    def on_click_drag_motion(self, event):
+        """拖动定位按钮过程中"""
+        widget = self.drag_data["widget"]
+        x = widget.winfo_x() + (event.x - self.drag_data["x"])
+        y = widget.winfo_y() + (event.y - self.drag_data["y"])
+        widget.place(x=x, y=y)
+
+    def on_click_drag_end(self, event):
+        """结束拖动定位按钮"""
+        # 获取鼠标释放位置的窗口句柄
+        self.clicker_x, self.clicker_y = self.root.winfo_pointerxy()
+        self.clicker_hwnd = get_window_at_position(self.clicker_x, self.clicker_y)
+        self.clicker_position = locate_position_in_hwnd(self.clicker_hwnd, self.clicker_x, self.clicker_y)
+        if self.clicker_position:
+            self.click_pos_label.config(text=f"点击位置：{self.clicker_position[0]}, {self.clicker_position[1]} (窗口: {self.clicker_hwnd})")
+        else:
+            self.click_pos_label.config(text="点击位置：定位失败")
+        # 恢复按钮位置
+        self.click_locate_button.pack(pady=10)
+
+    def clicker_start_stop(self):
+        """切换连点状态"""
+        if self.click_toggle_button.cget("text") == "启动连点":
+            # 检查是否已定位
+            if not self.clicker_position:
+                messagebox.showerror("错误", "请先定位点击位置")
+                return
+
+            # 开始连点
+            self.click_toggle_button.config(text="停止连点")
+            click_stop_event = threading.Event()
+            thread = ClickerThread(self.clicker_hwnd, click_stop_event, lambda: self.on_thread_finish2(), self.clicker_position[0], self.clicker_position[1])
+            thread.start()
+            self.threads['clicker'] = thread
+            self.stop_events['clicker'] = click_stop_event
+        else:
+            if 'clicker' in self.stop_events:
+                self.stop_events['clicker'].set()  # 设置事件，中断线程
+                # 设置超时时间，避免主线程无限等待
+                self.threads['clicker'].join(timeout=1)  # 最多等待 2 秒
+                # 清理线程和事件
+                if 'clicker' in self.threads:
+                    del self.threads['clicker']
+                if 'clicker' in self.stop_events:
+                    del self.stop_events['clicker']
+
+    def on_thread_finish2(self):
+        """
+        线程完成时的回调函数
+        """
+        # 切换到开始按钮
+        self.click_toggle_button.config(text="启动连点")
+        # 清理线程和事件
+        if 'clicker' in self.stop_events:
+            del self.threads['clicker']
+            del self.stop_events['clicker']
 
 
 # 运行程序

@@ -1,10 +1,9 @@
-import os
 import cv2
 import time
 import shutil
 import threading
 
-# from public import *
+from tools.public import *
 from tools.win_API import *
 from win32con import *
 from PIL import ImageGrab
@@ -37,10 +36,6 @@ route_directions = {
     16: ["down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down"]
 }
 
-base_path = os.path.dirname(os.path.abspath(__file__))  # 当前文件所在目录
-choose_path = os.path.join(os.path.dirname(base_path), "images/targets/choose_route.png")
-temp_path = os.path.join(os.path.dirname(base_path), "images/temp")
-
 def get_window_title(hwnd):
     """
     获取指定窗口句柄的标题
@@ -61,16 +56,6 @@ def get_window_title(hwnd):
     # 如果所有父窗口都没有标题，返回空字符串
     return ""
 
-def get_system_scaling():
-    # 获取屏幕设备上下文
-    hDC = GetDC(0)
-    # 获取屏幕的真实宽度和缩放后的宽度
-    real_w = GetDeviceCaps(hDC, DESKTOPHORZRES)
-    apparent_w = GetSystemMetrics(SM_CXSCREEN)
-    # 计算缩放比
-    scale = real_w / apparent_w
-    return scale
-
 def send_shortcut(hwnd, key, modifier=VK_CONTROL):
     """
     向指定窗口句柄发送【快捷键】组合
@@ -86,31 +71,6 @@ def send_shortcut(hwnd, key, modifier=VK_CONTROL):
     PostMessage(hwnd, WM_KEYUP, key, 0)
     # 发送修饰键释放（如 Ctrl）
     PostMessage(hwnd, WM_KEYUP, modifier, 0)
-
-
-def send_key(hwnd, key):
-    """
-    向指定窗口句柄发送【单个按键】
-    :param hwnd: 窗口句柄
-    :param key: 按键的虚拟键码（如 VK_F7）
-    """
-    PostMessage(hwnd, WM_KEYDOWN, key, 0)
-    PostMessage(hwnd, WM_KEYUP, key, 0)
-
-
-def click_window(hwnd, x, y):
-    """
-    在指定窗口内触发单击操作
-    :param hwnd: 窗口句柄
-    :param x: 单击位置的 X 坐标（相对于窗口客户区）
-    :param y: 单击位置的 Y 坐标（相对于窗口客户区）
-    """
-    # 将坐标打包为 lParam
-    lparam = y << 16 | x
-    # 发送鼠标左键按下消息
-    PostMessage(hwnd, WM_LBUTTONDOWN, 1, lparam)  # wParam=1 表示左键
-    # 发送鼠标左键释放消息
-    PostMessage(hwnd, WM_LBUTTONUP, 0, lparam)  # wParam=0 表示无按键
 
 def capture_window(hwnd, scal):
     """
@@ -221,47 +181,43 @@ class RouteThread(threading.Thread):
                     screenshot_path = capture_window(self.hwnd, self.scal)
                     # 4. 定位 choose_route.png 在窗口中的位置
                     self.choose_route_pos = locate_image_in_window(screenshot_path, "images/targets/choose_route.png", self.scal)
-                    # 5. 触发单击操作
-                    click_window(self.hwnd, self.choose_route_pos[0], self.choose_route_pos[1])
-                    # 6. 触发线路选择方法
-                    choose_route(self.hwnd, self.route_number)
-                    # 7. 触发回车
-                    send_key(self.hwnd, VK_RETURN)
-                    # 8. 检查标题来判断是否换线成功
-                    title = get_window_title(self.hwnd)
-                    if str(self.route_number) + "线" in title:
-                        print("换线成功，退出循环")
-                        # 清除操作：删除 temp 目录下对应句柄的文件夹
-                        temp_dir = os.path.join(temp_path, str(self.hwnd))
-                        if os.path.exists(temp_dir):
-                            shutil.rmtree(temp_dir)
-                            print(f"已删除目录: {temp_dir}")
+                    self.mix_operation()
+                    if self.check():
                         break
                 else:
-                    # 5. 触发单击操作
-                    click_window(self.hwnd, self.choose_route_pos[0], self.choose_route_pos[1])
-                    # 6. 触发线路选择方法
-                    choose_route(self.hwnd, self.route_number)
-                    # 7. 触发回车
-                    send_key(self.hwnd, VK_RETURN)
-                    # 8. 检查标题来判断是否换线成功
-                    title = get_window_title(self.hwnd)
-                    if str(self.route_number)+"线" in title:
-                        # print("换线成功，退出循环")
-                        # 清除操作：删除 temp 目录下对应句柄的文件夹
-                        # temp_dir = os.path.join(temp_path, str(self.hwnd))
-                        temp_dir = "images/temp"
-                        if os.path.exists(temp_dir):
-                            shutil.rmtree(temp_dir)
-                            # print(f"已删除目录: {temp_dir}")
+                    self.mix_operation()
+                    if self.check():
                         break
                 time.sleep(1)
             except Exception as e:
+                # 触发异常前，先触发ESC按键，恢复环境
+                send_key(self.hwnd, VK_ESCAPE)
                 print(f"执行过程中发生错误: {e}")
+                temp_dir = "images/temp"
+                if os.path.exists(temp_dir):
+                    shutil.rmtree(temp_dir)
                 break
         # 调用回调函数
         self.callback()
 
+    def mix_operation(self):
+        # 5. 触发单击操作
+        click_window(self.hwnd, self.choose_route_pos[0], self.choose_route_pos[1])
+        # 6. 触发线路选择方法
+        choose_route(self.hwnd, self.route_number)
+        # 7. 触发回车
+        send_key(self.hwnd, VK_RETURN)
+
+    def check(self):
+        # 8. 检查标题来判断是否换线成功
+        title = get_window_title(self.hwnd)
+        if str(self.route_number) + "线" in title:
+            temp_dir = "images/temp"
+            if os.path.exists(temp_dir):
+                shutil.rmtree(temp_dir)
+            return True
+        else:
+            return False
 
 if __name__ == '__main__':
     # send_key(918786, VK_F5)

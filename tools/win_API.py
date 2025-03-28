@@ -34,6 +34,7 @@ VK_S = 0x53
 VK_F5 = 0x74  # F5 的虚拟键码
 VK_F7 = 0x76 # F7 的虚拟键码
 VK_RETURN = 0x0D  # 回车键的虚拟键码
+VK_ESCAPE = 0x1B # ESC 的虚拟键码
 WM_LBUTTONDOWN = 0x0201  # 鼠标左键按下
 WM_LBUTTONUP = 0x0202    # 鼠标左键释放
 DESKTOPHORZRES = 118  # 真实屏幕宽度
