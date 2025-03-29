@@ -123,7 +123,7 @@ def locate_image_in_window(screenshot_path, template_path, scal):
     _, max_val, _, max_loc = cv2.minMaxLoc(result)
 
     # 如果匹配度高于阈值，返回中心坐标
-    if max_val > 0.9:  # 阈值可以根据实际情况调整
+    if max_val > 0.8:  # 阈值可以根据实际情况调整
         # 计算左上角坐标
         top_left_x = max_loc[0]
         top_left_y = max_loc[1]
@@ -177,10 +177,10 @@ class RouteThread(threading.Thread):
                 send_key(self.hwnd, VK_F7)
                 time.sleep(0.5)
                 if self.choose_route_pos is None:
-                    # 3. 截图并保存
-                    screenshot_path = capture_window(self.hwnd, self.scal)
-                    # 4. 定位 choose_route.png 在窗口中的位置
-                    self.choose_route_pos = locate_image_in_window(screenshot_path, "images/targets/choose_route.png", self.scal)
+                    """
+                    定位改成根据当前窗口大小，再去选择线路的位置
+                    """
+                    self.choose_route_pos = get_window_size(self.hwnd)
                     self.mix_operation()
                     if self.check():
                         break
@@ -201,8 +201,8 @@ class RouteThread(threading.Thread):
         self.callback()
 
     def mix_operation(self):
-        # 5. 触发单击操作
-        click_window(self.hwnd, self.choose_route_pos[0], self.choose_route_pos[1])
+        time.sleep(0.5)
+        click_window(self.hwnd, int(self.choose_route_pos[0] * 0.5), int(self.choose_route_pos[1] * 0.5))
         # 6. 触发线路选择方法
         choose_route(self.hwnd, self.route_number)
         # 7. 触发回车

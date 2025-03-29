@@ -44,6 +44,16 @@ def get_system_scaling():
     scale = real_w / apparent_w
     return scale
 
+def get_window_size(hwnd):
+    rect = wintypes.RECT()
+    success = ctypes.windll.user32.GetWindowRect(hwnd, ctypes.byref(rect))
+    if success:
+        width = rect.right - rect.left
+        height = rect.bottom - rect.top
+        return (width, height)
+    else:
+        return (0, 0)
+
 def click_window(hwnd, x, y):
     """
     在指定窗口内触发单击操作
@@ -75,6 +85,7 @@ def locate_position_in_hwnd(hwnd, x, y):
 if __name__ == "__main__":
     # 假设 hwnd 是通过某种方式获取的窗口句柄
     import time
-    time.sleep(2)
-    click_window(657124, 616 , 84)
-    pass
+    # time.sleep(2)
+    # click_window(657124, 616 , 84)
+    # pass
+    get_window_size(132762)

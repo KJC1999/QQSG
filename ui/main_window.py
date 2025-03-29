@@ -168,16 +168,16 @@ class ToolApp:
             handle = '窗口' + str(idx + 1)
             # 检查窗口句柄是否存在
             if handle in self.window_handles:
-                # 切换到停止按钮
-                self.start_buttons[idx].config(text="停止")
-                # 禁用其他开始按钮
-                for i, button in enumerate(self.start_buttons):
-                    if i != idx:
-                        button.config(state="disabled")
                 if self.route_menu[idx].get() == '':
                     # 弹出提示
                     messagebox.showwarning("错误", f"请确认是否选择了线路！！！")
                 else:
+                    # 切换到停止按钮
+                    self.start_buttons[idx].config(text="停止")
+                    # 禁用其他开始按钮
+                    for i, button in enumerate(self.start_buttons):
+                        if i != idx:
+                            button.config(state="disabled")
                     # 启动线程
                     hwnd = self.window_handles[handle]
                     route_number = int(self.route_menu[idx].get())
@@ -315,7 +315,7 @@ class ToolApp:
         # 获取鼠标释放位置的窗口句柄
         self.clicker_x, self.clicker_y = self.root.winfo_pointerxy()
         self.clicker_hwnd = get_window_at_position(self.clicker_x, self.clicker_y)
-        self.clicker_position = locate_position_in_hwnd(self.clicker_hwnd, self.clicker_x, self.clicker_y)
+        self.clicker_position = locate_position_in_hwnd(self.clicker_hwnd, self.clicker_x, self.clicker_y - 20)
         if self.clicker_position:
             self.click_pos_label.config(text=f"点击位置：{self.clicker_position[0]}, {self.clicker_position[1]} (窗口: {self.clicker_hwnd})")
         else:
