@@ -20,7 +20,7 @@ class ClickerThread(threading.Thread):
         while not self.stop_event.is_set():
             try:
                 click_window(self.hwnd, self.click_x, self.click_y)
-                time.sleep(0.1)
+                time.sleep(0.05)
             except Exception as e:
                 print(f"执行过程中发生错误: {e}")
                 break

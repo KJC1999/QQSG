@@ -36,6 +36,7 @@ class ToolApp:
         self.start_buttons = []  # 存储开始按钮
         self.route_menu = []  # 存储下拉列表
         self.clicker_position = None  # 存储点击坐标(x,y)
+        self.windows_size = {}  # 存储窗口大小
 
         # 初始化所有图标
         self.icons = load_icons("images/icons")
@@ -146,10 +147,12 @@ class ToolApp:
         if hwnd:
             # 显示句柄信息（十进制）
             self.logo_labels[idx].config(text=f"句柄: {hwnd}")  # 更新对应的 Label
-            print(f"框 {idx + 1} 获取到窗口句柄: {hwnd}")
+            # print(f"框 {idx + 1} 获取到窗口句柄: {hwnd}")
             # 将句柄存储到字典中
             self.window_handles['窗口'+str(idx+1)] = hwnd
-            print(self.window_handles)
+            # 记录window_size，方便给挤线器使用
+            self.windows_size['窗口'+str(idx+1)] = get_window_size(hwnd)
+            # print(self.window_handles)
         else:
             self.logo_labels[idx].config(text="无")  # 更新对应的 Label
             print(f"框 {idx + 1} 未获取到窗口句柄")
@@ -175,14 +178,14 @@ class ToolApp:
                     # 切换到停止按钮
                     self.start_buttons[idx].config(text="停止")
                     # 禁用其他开始按钮
-                    for i, button in enumerate(self.start_buttons):
-                        if i != idx:
-                            button.config(state="disabled")
+                    # for i, button in enumerate(self.start_buttons):
+                    #     if i != idx:
+                    #         button.config(state="disabled")
                     # 启动线程
                     hwnd = self.window_handles[handle]
                     route_number = int(self.route_menu[idx].get())
                     stop_event = threading.Event()
-                    thread = RouteThread(hwnd, stop_event, lambda: self.on_thread_finish(idx, route_idx), route_number)
+                    thread = RouteThread(hwnd, stop_event, lambda: self.on_thread_finish(idx, route_idx), route_number, self.windows_size['窗口'+str(idx+1)])
                     thread.start()
                     # 存储线程和事件
                     self.threads[route_idx] = thread

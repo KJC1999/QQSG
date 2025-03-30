@@ -50,9 +50,10 @@ def get_window_size(hwnd):
     if success:
         width = rect.right - rect.left
         height = rect.bottom - rect.top
-        return (width, height)
+        print(width, height)
+        return width, height
     else:
-        return (0, 0)
+        return None
 
 def click_window(hwnd, x, y):
     """
@@ -88,4 +89,7 @@ if __name__ == "__main__":
     # time.sleep(2)
     # click_window(657124, 616 , 84)
     # pass
-    get_window_size(132762)
+    get_window_size(722676)
+    # click_window(132874,484,398)
+    # import math
+    # print(math.ceil(3/2))

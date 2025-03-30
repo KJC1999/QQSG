@@ -1,4 +1,5 @@
 import cv2
+import math
 import time
 import shutil
 import threading
@@ -34,6 +35,38 @@ route_directions = {
     14: ["down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down"],
     15: ["down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down"],
     16: ["down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down"]
+}
+
+# 800*600分辨率下的计算准则
+resolution1 = {
+    'left_x': 0.48,
+    'right_x': 0.6,
+    'init_y': 0.325,
+    'inc_y': 30
+}
+
+# 1024*768分辨率下的计算准则
+resolution2 = {
+    'left_x': 0.47,
+    'right_x': 0.6,
+    'init_y': 0.35,
+    'inc_y': 30
+}
+
+# 1280*960分辨率下的计算准则
+resolution3 = {
+    'left_x': 0.48,
+    'right_x': 0.56,
+    'init_y': 0.36,
+    'inc_y': 30
+}
+
+# 1360*720分辨率下的计算准则
+resolution4 = {
+    'left_x': 0.49,
+    'right_x': 0.56,
+    'init_y': 0.36,
+    'inc_y': 30
 }
 
 def get_window_title(hwnd):
@@ -134,6 +167,19 @@ def locate_image_in_window(screenshot_path, template_path, scal):
         return center_x, center_y - 10
     return None
 
+def get_route_location(route_number, window_size):
+    if 800 < window_size[0] < 900:
+        resolution = resolution1
+    elif 1000 < window_size[0] < 1100:
+        resolution = resolution2
+    elif 1250 < window_size[0] < 1300:
+        resolution = resolution3
+    elif window_size[0] > 1340:
+        resolution = resolution4
+    if route_number in [3,5,7,9,11,13,15]:
+        return window_size[0] * resolution['left_x'], window_size[1] * resolution['init_y'] + (math.ceil(route_number/2)-1) * resolution['inc_y']
+    elif route_number in [2,4,6,8,10,12,14,16]:
+        return window_size[0] * resolution['right_x'], window_size[1] * resolution['init_y'] + (math.ceil(route_number/2)-1) * resolution['inc_y']
 
 def choose_route(hwnd, target_route):
     """
@@ -152,7 +198,7 @@ def choose_route(hwnd, target_route):
 
 
 class RouteThread(threading.Thread):
-    def __init__(self, hwnd, stop_event, callback, route_number):
+    def __init__(self, hwnd, stop_event, callback, route_number, window_size):
         super().__init__()
         self.hwnd = hwnd  # 窗口句柄
         self.stop_event = stop_event  # 用于中断线程的事件
@@ -160,7 +206,8 @@ class RouteThread(threading.Thread):
         self.counter = 0  # 计数器
         self.scal = get_system_scaling()
         self.route_number = route_number
-        self.choose_route_pos = None
+        self.window_size = window_size
+        self.route_location = get_route_location(route_number, window_size)
 
     def run(self):
         """
@@ -175,20 +222,12 @@ class RouteThread(threading.Thread):
                 SetForegroundWindow(self.hwnd)
                 # 2. 触发 F7 按键
                 send_key(self.hwnd, VK_F7)
+                time.sleep(0.3)
+                print("当前窗口大小：", self.window_size)
+                self.mix_operation()
+                if self.check():
+                    break
                 time.sleep(0.5)
-                if self.choose_route_pos is None:
-                    """
-                    定位改成根据当前窗口大小，再去选择线路的位置
-                    """
-                    self.choose_route_pos = get_window_size(self.hwnd)
-                    self.mix_operation()
-                    if self.check():
-                        break
-                else:
-                    self.mix_operation()
-                    if self.check():
-                        break
-                time.sleep(1)
             except Exception as e:
                 # 触发异常前，先触发ESC按键，恢复环境
                 send_key(self.hwnd, VK_ESCAPE)
@@ -201,12 +240,17 @@ class RouteThread(threading.Thread):
         self.callback()
 
     def mix_operation(self):
-        time.sleep(0.5)
-        click_window(self.hwnd, int(self.choose_route_pos[0] * 0.5), int(self.choose_route_pos[1] * 0.5))
-        # 6. 触发线路选择方法
-        choose_route(self.hwnd, self.route_number)
-        # 7. 触发回车
-        send_key(self.hwnd, VK_RETURN)
+        click_window(self.hwnd, int(self.window_size[0] * 0.5), int(self.window_size[1] * 0.5))
+        time.sleep(0.3)
+        if self.route_number != 1:
+            # 6. 触发线路选择
+            print(f"触发坐标：({int(self.route_location[0])},{int(self.route_location[1])})")
+            click_window(self.hwnd, int(self.route_location[0]), int(self.route_location[1]))
+            # 7. 触发回车
+            send_key(self.hwnd, VK_RETURN)
+        else:
+            # 7. 触发回车
+            send_key(self.hwnd, VK_RETURN)
 
     def check(self):
         # 8. 检查标题来判断是否换线成功
