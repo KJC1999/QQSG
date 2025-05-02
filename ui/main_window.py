@@ -86,7 +86,7 @@ class ToolApp:
 
             # 选择路线的下拉列表
             route_var = tk.StringVar()
-            route_options = [str(i) for i in range(1, 15)]  # 1-14
+            route_options = [str(i) for i in range(1, 16)]  # 1-15x QQ三国最多15条线路
             route_menu = ttk.Combobox(frame, textvariable=route_var, values=route_options, state="readonly", width=5)
             route_menu.grid(row=1, column=0, padx=5, pady=5, sticky="w")
             self.route_menu.append(route_menu)

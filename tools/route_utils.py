@@ -57,7 +57,7 @@ resolution2 = {
 resolution3 = {
     'left_x': 0.48,
     'right_x': 0.56,
-    'init_y': 0.36,
+    'init_y': 0.41,
     'inc_y': 30
 }
 
@@ -65,7 +65,7 @@ resolution3 = {
 resolution4 = {
     'left_x': 0.49,
     'right_x': 0.56,
-    'init_y': 0.36,
+    'init_y': 0.34,
     'inc_y': 30
 }
 
@@ -222,12 +222,12 @@ class RouteThread(threading.Thread):
                 SetForegroundWindow(self.hwnd)
                 # 2. 触发 F7 按键
                 send_key(self.hwnd, VK_F7)
-                time.sleep(0.3)
+                time.sleep(0.2)
                 print("当前窗口大小：", self.window_size)
                 self.mix_operation()
                 if self.check():
                     break
-                time.sleep(0.5)
+                time.sleep(0.2)
             except Exception as e:
                 # 触发异常前，先触发ESC按键，恢复环境
                 send_key(self.hwnd, VK_ESCAPE)
@@ -240,8 +240,8 @@ class RouteThread(threading.Thread):
         self.callback()
 
     def mix_operation(self):
-        click_window(self.hwnd, int(self.window_size[0] * 0.5), int(self.window_size[1] * 0.5))
-        time.sleep(0.3)
+        click_window(self.hwnd, int(self.window_size[0] * 0.5), int(self.window_size[1] * 0.52))
+        time.sleep(0.2)
         if self.route_number != 1:
             # 6. 触发线路选择
             print(f"触发坐标：({int(self.route_location[0])},{int(self.route_location[1])})")
@@ -253,15 +253,24 @@ class RouteThread(threading.Thread):
             send_key(self.hwnd, VK_RETURN)
 
     def check(self):
-        # 8. 检查标题来判断是否换线成功
         title = get_window_title(self.hwnd)
-        if str(self.route_number) + "线" in title:
-            temp_dir = "images/temp"
-            if os.path.exists(temp_dir):
-                shutil.rmtree(temp_dir)
+        if not title: return False
+
+        # 混合方案：先快速检查"线"是否存在
+        if "线" not in title: return False
+
+        # 再用精确的字符串处理
+        line_pos = title.rfind("线")  # 从右向左找更安全
+        num_end = line_pos
+        num_start = num_end
+        while num_start > 0 and title[num_start - 1].isdigit():
+            num_start -= 1
+
+        if num_start != num_end and int(title[num_start:num_end]) == self.route_number:
+            if os.path.exists("images/temp"):
+                shutil.rmtree("images/temp")
             return True
-        else:
-            return False
+        return False
 
 if __name__ == '__main__':
     # send_key(918786, VK_F5)
