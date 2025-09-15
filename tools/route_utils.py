@@ -10,31 +10,17 @@ from win32con import *
 from PIL import ImageGrab
 from datetime import datetime
 
-# 定义方向键映射
+"""
+定义方向键映射：
+init：初始
+inc：增量
+20250907：x修改为x1、x2、x3：为杜康、桃园的多线路服务器服务
+"""
 key_mapping = {
     "left": 0x25,  # 左箭头
     "right": 0x27,  # 右箭头
     "up": 0x26,     # 上箭头
     "down": 0x28,   # 下箭头
-}
-
-# 定义每条线路的方向键顺序
-route_directions = {
-    2: ["down"],
-    3: ["down","down"],
-    4: ["down", "down", "down"],  # 或者 ["down", "right"]
-    5: ["down", "down", "down", "down"],
-    6: ["down", "down", "down", "down", "down"],
-    7: ["down", "down", "down", "down", "down", "down"],
-    8: ["down", "down", "down", "down", "down", "down", "down"],
-    9: ["down", "down", "down", "down", "down", "down", "down", "down"],
-    10: ["down", "down", "down", "down", "down", "down", "down", "down", "down"],
-    11: ["down", "down", "down", "down", "down", "down", "down", "down", "down", "down"],
-    12: ["down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down"],
-    13: ["down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down"],
-    14: ["down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down"],
-    15: ["down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down"],
-    16: ["down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down", "down"]
 }
 
 # 800*600分辨率下的计算准则
@@ -49,7 +35,7 @@ resolution1 = {
 resolution2 = {
     'left_x': 0.47,
     'right_x': 0.6,
-    'init_y': 0.35,
+    'init_y': 0.33,
     'inc_y': 30
 }
 
@@ -66,6 +52,42 @@ resolution4 = {
     'left_x': 0.49,
     'right_x': 0.56,
     'init_y': 0.34,
+    'inc_y': 30
+}
+
+# 800*600分辨率下的计算准则
+dk_resolution1 = {
+    'x1': 0.375,
+    'x2': 0.5,
+    'x3': 0.65,
+    'init_y': 0.28,
+    'inc_y': 30
+}
+
+# 1024*768分辨率下的计算准则
+dk_resolution2 = {
+    'x1': 0.415,
+    'x2': 0.5,
+    'x3': 0.61,
+    'init_y': 0.31,
+    'inc_y': 30
+}
+
+# 1280*960分辨率下的计算准则
+dk_resolution3 = {
+    'x1': 0.43,
+    'x2': 0.5,
+    'x3': 0.6,
+    'init_y': 0.36,
+    'inc_y': 30
+}
+
+# 1360*720分辨率下的计算准则
+dk_resolution4 = {
+    'x1': 0.43,
+    'x2': 0.5,
+    'x3': 0.59,
+    'init_y': 0.307,
     'inc_y': 30
 }
 
@@ -168,33 +190,35 @@ def locate_image_in_window(screenshot_path, template_path, scal):
     return None
 
 def get_route_location(route_number, window_size):
+    # 判断当前窗口大小
     if 800 < window_size[0] < 900:
-        resolution = resolution1
+        resolution = dk_resolution1
     elif 1000 < window_size[0] < 1100:
-        resolution = resolution2
+        resolution = dk_resolution2
     elif 1250 < window_size[0] < 1300:
-        resolution = resolution3
+        resolution = dk_resolution3
     elif window_size[0] > 1340:
-        resolution = resolution4
-    if route_number in [3,5,7,9,11,13,15]:
-        return window_size[0] * resolution['left_x'], window_size[1] * resolution['init_y'] + (math.ceil(route_number/2)-1) * resolution['inc_y']
-    elif route_number in [2,4,6,8,10,12,14,16]:
-        return window_size[0] * resolution['right_x'], window_size[1] * resolution['init_y'] + (math.ceil(route_number/2)-1) * resolution['inc_y']
+        resolution = dk_resolution4
+    if route_number in [1,4,7,10,13,16,19,22,25,28]:
+        print("判断为第一列")
+        return window_size[0] * resolution['x1'], window_size[1] * resolution['init_y'] + (math.ceil(route_number/3)-1) * resolution['inc_y']
+    elif route_number in [2,5,8,11,14,17,20,23,26,29]:
+        print("判断为第二列")
+        return window_size[0] * resolution['x2'], window_size[1] * resolution['init_y'] + (math.ceil(route_number/3)-1) * resolution['inc_y']
+    elif route_number in [3,6,9,12,15,18,21,24,27,30]:
+        print("判断为第三列")
+        return window_size[0] * resolution['x3'], window_size[1] * resolution['init_y'] + (math.ceil(route_number/3)-1) * resolution['inc_y']
 
-def choose_route(hwnd, target_route):
-    """
-    选择目标线路
-    :param hwnd: 句柄
-    :param target_route: 目标线路（1-16）
-    """
-    directions = route_directions.get(target_route, [])
-
-    # 依次发送方向键
-    for direction in directions:
-        key = key_mapping.get(direction)
-        if key:
-            send_key(hwnd, key)
-            time.sleep(0.1)  # 每次按键后等待 0.1 秒
+def get_choose_location(window_size):
+    # 判断当前窗口大小
+    if 800 < window_size[0] < 900:
+        return int(window_size[0] * 0.5), int(window_size[1] * 0.52)
+    elif 1000 < window_size[0] < 1100:
+        return int(window_size[0] * 0.5), int(window_size[1] * 0.52)
+    elif 1250 < window_size[0] < 1300:
+        return int(window_size[0] * 0.5), int(window_size[1] * 0.56)
+    elif window_size[0] > 1340:
+        return int(window_size[0] * 0.5), int(window_size[1] * 0.52)
 
 
 class RouteThread(threading.Thread):
@@ -208,6 +232,7 @@ class RouteThread(threading.Thread):
         self.route_number = route_number
         self.window_size = window_size
         self.route_location = get_route_location(route_number, window_size)
+        self.choose_location = get_choose_location(window_size)
 
     def run(self):
         """
@@ -240,12 +265,14 @@ class RouteThread(threading.Thread):
         self.callback()
 
     def mix_operation(self):
-        click_window(self.hwnd, int(self.window_size[0] * 0.5), int(self.window_size[1] * 0.52))
-        time.sleep(0.2)
+        click_window(self.hwnd, self.choose_location[0], self.choose_location[1])
+        time.sleep(0.3)
         if self.route_number != 1:
             # 6. 触发线路选择
-            print(f"触发坐标：({int(self.route_location[0])},{int(self.route_location[1])})")
-            click_window(self.hwnd, int(self.route_location[0]), int(self.route_location[1]))
+            # SetForegroundWindow(self.hwnd)
+            print(f"触发坐标：({int(self.route_location[0]+1)},{int(self.route_location[1]+1)})")
+            click_window(self.hwnd, int(self.route_location[0]) + 1, int(self.route_location[1]) + 1)
+            time.sleep(0.3)
             # 7. 触发回车
             send_key(self.hwnd, VK_RETURN)
         else:
@@ -255,21 +282,15 @@ class RouteThread(threading.Thread):
     def check(self):
         title = get_window_title(self.hwnd)
         if not title: return False
-
         # 混合方案：先快速检查"线"是否存在
         if "线" not in title: return False
-
         # 再用精确的字符串处理
         line_pos = title.rfind("线")  # 从右向左找更安全
         num_end = line_pos
         num_start = num_end
         while num_start > 0 and title[num_start - 1].isdigit():
             num_start -= 1
-
-        if num_start != num_end and int(title[num_start:num_end]) == self.route_number:
-            if os.path.exists("images/temp"):
-                shutil.rmtree("images/temp")
-            return True
+        if num_start != num_end and int(title[num_start:num_end]) == self.route_number: return True
         return False
 
 if __name__ == '__main__':
@@ -279,5 +300,9 @@ if __name__ == '__main__':
     # get_window_title(3476046)
     # send_key(3476046, VK_F7)
     time.sleep(2)
-    send_key(3476046, VK_RETURN)
+    time.sleep(2)
+    # send_key(394666, WM_KEYDOWN)
+    click_window(264518, 515, 323)
+    click_window(394666, 520, 325)
+    click_window(394666, 515, 323)
 

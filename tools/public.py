@@ -86,10 +86,10 @@ def locate_position_in_hwnd(hwnd, x, y):
 if __name__ == "__main__":
     # 假设 hwnd 是通过某种方式获取的窗口句柄
     import time
-    # time.sleep(2)
+    time.sleep(2)
     # click_window(657124, 616 , 84)
     # pass
-    get_window_size(722676)
-    # click_window(132874,484,398)
+    # get_window_size(394666)
+    click_window(394666, 517, 254)
     # import math
     # print(math.ceil(3/2))
